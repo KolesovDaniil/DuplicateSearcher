@@ -3,9 +3,10 @@ from flask_restplus import Resource
 from app.namespaces import VideoDuplicateNs
 
 
-@VideoDuplicateNs.ns.route('/<int:id>')
-@VideoDuplicateNs.ns.doc({'id': 'Video or folder id'})
-@VideoDuplicateNs.ns.marshal_with(VideoDuplicateNs.output_post_model)
+@VideoDuplicateNs.ns.route('<int:id>')
 class VideoDuplicateProc(Resource):
-    def post(self, id: int):
-        pass
+    @VideoDuplicateNs.ns.doc({'id': 'ID of file or folder'})
+    @VideoDuplicateNs.ns.marshal_with(VideoDuplicateNs.output_post_model)
+    def get(self, id: int):
+        """Get GoogleSheets link"""
+        return {'table': f'test{id}'}

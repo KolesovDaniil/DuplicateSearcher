@@ -12,3 +12,12 @@ class VideoDuplicateNs:
                                 {'email': fields.String()})
     output_post_model = ns.model('OutputPostModel',
                                  {'table': fields.String()})
+
+
+class ErrorNs:
+    """Namespace for errors"""
+
+    ns = Namespace('')
+
+    error_model = ns.model('ErrorModel',
+                           {'message': fields.String()})
