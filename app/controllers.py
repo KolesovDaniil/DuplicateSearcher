@@ -1,12 +1,16 @@
+from http import HTTPStatus
+
 from flask_restplus import Resource
 
-from app.namespaces import VideoDuplicateNs
+from app.namespaces import VideoDuplicateNs, ErrorNs
+from app.exceptions import ForbiddenError
 
 
-@VideoDuplicateNs.ns.route('<int:id>')
+@VideoDuplicateNs.ns.route('/processing')
 class VideoDuplicateProc(Resource):
     @VideoDuplicateNs.ns.doc({'id': 'ID of file or folder'})
+    @VideoDuplicateNs.ns.response()
     @VideoDuplicateNs.ns.marshal_with(VideoDuplicateNs.output_post_model)
-    def get(self, id: int):
+    def post(self):
         """Get GoogleSheets link"""
-        return {'table': f'test{id}'}
+        raise ForbiddenError('123')
