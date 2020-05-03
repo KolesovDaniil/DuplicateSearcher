@@ -138,8 +138,6 @@ def search_hash(video_id, hash_curr, filename, tolerance):
     except:
         db.session.rollback()
 
-    db.session.query(VideoHash).filter(VideoHash.video_id != video_id).all()
-
 
 def write_logs(video1, timecode1, video2, timecode2):
     """Function to write results of search"""
