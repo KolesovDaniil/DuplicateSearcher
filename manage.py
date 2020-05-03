@@ -1,14 +1,10 @@
-from flask import Flask
-from flask_restplus import Api
+from flask_migrate import Migrate
 
-from app.namespaces import VideoDuplicateNs, ErrorNs
-from app.config import AppSettings
+from app.factory import create_app
+from app.database import db
 
-app = Flask(__name__)
-app.config.from_object(AppSettings())
-api = Api(app)
-api.add_namespace(VideoDuplicateNs.ns)
-api.add_namespace(ErrorNs.ns)
+app = create_app()
+migrate = Migrate(app, db)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

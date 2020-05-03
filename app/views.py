@@ -287,7 +287,3 @@ def delete_dir(folder):
 def get_table_link():
     """Function for getting link of GoogleSheets link"""
     pass
-
-
-if __name__ == '__main__':
-    connect_to_drive()

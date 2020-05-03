@@ -1,6 +1,11 @@
+""""""
 
-class AppSettings:
-    def __init__(self):
-        """Инициализация объекта с конфигурацией приложения"""
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
 
-        self.RESTPLUS_MASK_SWAGGER=False
+
+class Config:
+    """"""
+
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
+    RESTPLUS_MASK_SWAGGER = False
