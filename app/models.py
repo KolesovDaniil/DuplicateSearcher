@@ -2,20 +2,22 @@ from app.database import db
 
 
 class Video(db.Model):
-
     __tablename__ = 'video'
 
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    video_name = db.Column(db.String, nullable=False)
-    video_url = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    url = db.Column(db.String, nullable=False)
+    fps = db.Column(db.Integer, nullable=False)
 
-    hashed_video = db.relashionshap('VideoHash', backref='hash', dynamic='lazy')
-    compared_video1 = db.relashionshap('Log', backref='comp_video1', dynamic='lazy')
-    compared_video2 = db.relashionshap('Log', backref='comp_video2', dynamic='lazy')
+    hashed_video = db.relationship('VideoHash', backref='video', lazy='dynamic')
+
+    video1 = db.relationship('Log', foreign_keys='Log.video1_id', backref='comp_video1',
+                             lazy='dynamic')
+    video2 = db.relationship('Log', foreign_keys='Log.video2_id', backref='comp_video2',
+                             lazy='dynamic')
 
 
 class VideoHash(db.Model):
-
     __tablename__ = 'video_hash'
 
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
@@ -25,7 +27,6 @@ class VideoHash(db.Model):
 
 
 class Log(db.Model):
-
     __tablename__ = 'log'
 
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
@@ -33,5 +34,3 @@ class Log(db.Model):
     time_code1 = db.Column(db.String, nullable=False)
     video2_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     time_code2 = db.Column(db.String, nullable=False)
-
-
