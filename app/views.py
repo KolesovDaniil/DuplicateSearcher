@@ -14,12 +14,15 @@ from pydrive.drive import GoogleDrive
 from app.database import db
 from app.models import Video, VideoHash, Log
 
+from app.exceptions import NotFoundError
+from app.exceptions import ForbiddenError
+
 MAIN_DIR = 'C:/Users/dfkhasanova/Desktop/Учеба/NIR/script/'
 SUBDIR = MAIN_DIR + 'pict/'
 
 def process(id, mail=''):
     connect_to_drive(id)
-    get_table_link(mail)
+    return get_table_link(mail)
 
 def connect_to_drive(dir):
     """Function to connect to Google Drive"""
@@ -43,34 +46,39 @@ def connect_to_drive(dir):
 
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
-    filelist = []
-    file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
-    for f in file_list:
-        if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
-            filelist.append({"id": f['id'], "title": f['title'],
-                             "list": list_folder(f['id'], folder, drive, service)})
-        elif f['mimeType'] == 'video/x-msvideo':
-            file = drive.CreateFile({'id': f['id']})
-            GD_download_file(service, f['id'])
-            results = add_video(f["title"], f["alternateLink"])
-            for video in os.listdir(MAIN_DIR):
-                if '.avi' in video:
-                    os.makedirs("pict", exist_ok=True)
-                    subprocess.call(
-                        ['ffmpeg', '-i', video, '-vf',
-                         "select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'",
-                         '-vsync', '0', '-an', '-frame_pts', '1',
-                         'pict/%d.jpg'])
-                    os.rename(MAIN_DIR + video, SUBDIR + video)
-                    os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
-                    for vid in os.listdir(os.path.splitext(video)[0]):
-                        if '.avi' in vid:
-                            for element in results:
-                                if vid == element["video_name"]:
-                                    search_similar(element["id"],
-                                                   MAIN_DIR + vid.split(".")[0] + '/')
-                    delete_dir(video.split(".")[0])
-    return filelist
+    try:
+        filelist = []
+        file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
+        if not file_list:
+            raise ForbiddenError("Object cannot be accessed.")
+        for f in file_list:
+            if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
+                filelist.append({"id": f['id'], "title": f['title'],
+                                 "list": list_folder(f['id'], folder, drive, service)})
+            elif f['mimeType'] == 'video/x-msvideo':
+                file = drive.CreateFile({'id': f['id']})
+                GD_download_file(service, f['id'])
+                results = add_video(f["title"], f["alternateLink"])
+                for video in os.listdir(MAIN_DIR):
+                    if '.avi' in video:
+                        os.makedirs("pict", exist_ok=True)
+                        subprocess.call(
+                            ['ffmpeg', '-i', video, '-vf',
+                             "select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'",
+                             '-vsync', '0', '-an', '-frame_pts', '1',
+                             'pict/%d.jpg'])
+                        os.rename(MAIN_DIR + video, SUBDIR + video)
+                        os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
+                        for vid in os.listdir(os.path.splitext(video)[0]):
+                            if '.avi' in vid:
+                                for element in results:
+                                    if vid == element["video_name"]:
+                                        search_similar(element["id"],
+                                                       MAIN_DIR + vid.split(".")[0] + '/')
+                        delete_dir(video.split(".")[0])
+        return filelist
+    except:
+        raise NotFoundError("The object is not found.")
 
 
 def partial(total_byte_len, part_size_limit):
