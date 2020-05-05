@@ -17,6 +17,9 @@ from app.models import Video, VideoHash, Log
 MAIN_DIR = 'C:/Users/dfkhasanova/Desktop/Учеба/NIR/script/'
 SUBDIR = MAIN_DIR + 'pict/'
 
+def process(id, mail=''):
+    connect_to_drive(id)
+    get_table_link(mail)
 
 def connect_to_drive(dir):
     """Function to connect to Google Drive"""
@@ -37,7 +40,6 @@ def connect_to_drive(dir):
     drive = GoogleDrive(gauth)
     service = gauth.service
     list_folder(dir, SUBDIR, drive, service)
-
 
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
@@ -220,6 +222,6 @@ def delete_dir(folder):
     print(MAIN_DIR + folder)
 
 
-def get_table_link():
-    """Function for getting link of GoogleSheets link"""
+def get_table_link(mail):
+    """Function to get link of GoogleSheets link"""
     pass
