@@ -17,12 +17,14 @@ from app.models import Video, VideoHash, Log
 from app.exceptions import NotFoundError
 from app.exceptions import ForbiddenError
 
-MAIN_DIR = 'C:/Users/dfkhasanova/Desktop/Учеба/NIR/script/'
+MAIN_DIR = '/home/DinaKursach/'
 SUBDIR = MAIN_DIR + 'pict/'
+
 
 def process(id, mail=''):
     connect_to_drive(id)
     return get_table_link(mail)
+
 
 def connect_to_drive(dir):
     """Function to connect to Google Drive"""
@@ -44,23 +46,27 @@ def connect_to_drive(dir):
     service = gauth.service
     list_folder(dir, SUBDIR, drive, service)
 
+
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
     try:
         filelist = []
         file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
         if not file_list:
-            raise ForbiddenError("Object cannot be accessed.")
+            raise ForbiddenError("Object cannot be accessed")
         for f in file_list:
             if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
                 filelist.append({"id": f['id'], "title": f['title'],
                                  "list": list_folder(f['id'], folder, drive, service)})
-            elif f['mimeType'] == 'video/x-msvideo':
+            elif f['mimeType'] == 'video/mp4':
+                print("video is found")
                 file = drive.CreateFile({'id': f['id']})
+                print("GD_download_file is running")
                 GD_download_file(service, f['id'])
+                print("GD_download_file is done")
                 results = add_video(f["title"], f["alternateLink"])
                 for video in os.listdir(MAIN_DIR):
-                    if '.avi' in video:
+                    if '.mp4' in video:
                         os.makedirs("pict", exist_ok=True)
                         subprocess.call(
                             ['ffmpeg', '-i', video, '-vf',
@@ -70,16 +76,15 @@ def list_folder(parent, folder, drive, service):
                         os.rename(MAIN_DIR + video, SUBDIR + video)
                         os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
                         for vid in os.listdir(os.path.splitext(video)[0]):
-                            if '.avi' in vid:
+                            if '.mp4' in vid:
                                 for element in results:
-                                    if vid == element["video_name"]:
-                                        search_similar(element["id"],
+                                    if vid == element.name:
+                                        search_similar(element.id,
                                                        MAIN_DIR + vid.split(".")[0] + '/')
                         delete_dir(video.split(".")[0])
         return filelist
     except:
-        raise NotFoundError("The object is not found.")
-
+        raise NotFoundError("The object is not found")
 
 def partial(total_byte_len, part_size_limit):
     """Function to get parts of video"""
@@ -92,13 +97,16 @@ def partial(total_byte_len, part_size_limit):
 
 def GD_download_file(service, file_id):
     """Function to download video"""
+    print(file_id)
     drive_file = service.files().get(fileId=file_id).execute()
     download_url = drive_file.get('downloadUrl')
     total_size = int(drive_file.get('fileSize'))
     video_parts = partial(total_size,
                           100000000)  # I'm downloading BIG files, so 100M chunk size is fine for me
+    print("s: ", video_parts)
     title = drive_file.get('title')
-    original_filename = drive_file.get('original_filename')
+    original_filename = drive_file.get('originalFilename')
+    print("ddd ", drive_file)
     filename = './' + original_filename
     if download_url:
         with open(filename, 'wb') as file:
@@ -121,52 +129,33 @@ def add_video(video_name, video_url):
     new_video = Video(name=video_name, url=video_url,
                       fps=cv2.VideoCapture(video_name).get(cv2.CAP_PROP_FPS))
 
-    try:
-        db.session.add(new_video)
-        db.session.commit()
-    except:
-        db.session.rollback()
-        return ("Database error")
+    db.session.add(new_video)
+    db.session.commit()
 
-    try:
-        results = db.session.query(Video).filter(Video.url == video_url).first()
-    except:
-        db.session.rollback()
-        return ("Database error")
-
-    return results
+    return new_video
 
 
 def search_hash(video_id, hash_curr, filename, tolerance):
     """Function to search videos"""
 
-    try:
-        results = db.session.query(VideoHash).filter(VideoHash.video_id != video_id).all()
-        for res in results:
-            if hashes_are_similar(res.hash, hash_curr, tolerance):
-                write_logs(video_id, filename, res.video_id, res.time_code)
-    except:
-        db.session.rollback()
+    results = db.session.query(VideoHash).filter(VideoHash.video_id != video_id).all()
+    for res in results:
+        if hashes_are_similar(res.hash, hash_curr, tolerance):
+            write_logs(video_id, filename, res.video_id, res.time_code)
 
 
 def write_logs(video1, timecode1, video2, timecode2):
     """Function to write results of search"""
 
-    try:
-        log = Log(video1_id=video1, time_code1=timecode1, video2_id=video2, time_code2=timecode2)
-        db.session.add(log)
-    except:
-        db.session.rollback()
+    log = Log(video1_id=video1, time_code1=timecode1, video2_id=video2, time_code2=timecode2)
+    db.session.add(log)
 
 
 def add_hash(video_id, timecode, video_hash):
     """Function to add hash to database"""
 
-    try:
-        hash = VideoHash(video_id=video_id, time_code=timecode, hash=video_hash)
-        db.session.add(hash)
-    except:
-        db.session.rollback()
+    hash = VideoHash(video_id=video_id, time_code=timecode, hash=video_hash)
+    db.session.add(hash)
 
 
 def hash_distance(left_hash, right_hash):

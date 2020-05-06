@@ -1,5 +1,5 @@
 """"""
-import requests
+#import requests
 from unittest.mock import patch
 from app.views import get_table_link
 #

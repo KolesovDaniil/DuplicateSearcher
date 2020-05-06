@@ -6,15 +6,15 @@ from app.exceptions import NotFoundError, ForbiddenError
 from app.namespaces import ErrorNs
 
 
-@ErrorNs.ns.error_handlers(NotFoundError)
+@ErrorNs.ns.errorhandler(NotFoundError)
 @ErrorNs.ns.marshal_with(ErrorNs.error_model, code=HTTPStatus.NOT_FOUND)
-def not_found_error(e):
+def not_found_error_handler(e):
     """Обработчик для ошибок не найденного ресурса"""
     return {'message': e}, HTTPStatus.NOT_FOUND
 
 
-@ErrorNs.ns.error_handlers(ForbiddenError)
+@ErrorNs.ns.errorhandler(ForbiddenError)
 @ErrorNs.ns.marshal_with(ErrorNs.error_model, code=HTTPStatus.FORBIDDEN)
-def forbidden_error(e):
+def forbidden_error_handler(e):
     """Обработчик ошибок отказа доступа"""
     return {'message': e}, HTTPStatus.FORBIDDEN

@@ -6,12 +6,12 @@ class VideoDuplicateNs:
 
     ns = Namespace('duplicate-video')
 
-    input_get_model = ns.model('InputGetModel',
-                               {'email': fields.String()})
-    output_get_model = ns.model('OutputGetModel',
-                                {'email': fields.String()})
-    output_post_model = ns.model('OutputPostModel',
-                                 {'table': fields.String()})
+    post_expect_model = ns.model('PostExpectModel',
+                                 {'email': fields.String(),
+                                  'id': fields.String(required=True)})
+
+    post_response_model = ns.model('PostResponseModel',
+                                   {'table': fields.String()})
 
 
 class ErrorNs:

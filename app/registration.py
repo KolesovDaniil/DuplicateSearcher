@@ -25,11 +25,11 @@ def create_api(blueprint: Blueprint) -> None:
     """"""
 
     api = Api(blueprint,
-              title='Tagger REST API',
+              title='VideoDuplicateRecognizer REST API',
               version='1.0',
-              contact='Kolesov Daniil',
-              contact_email='dakolesov@edu.hse.ru',
-              description='Web Service for Text Tagging')
+              contact='Dina Khasanova',
+              contact_email='dfkhasanova@edu.hse.ru',
+              description='Web Service for Video Duplicate Recognition')
 
     api.add_namespace(VideoDuplicateNs.ns)
     api.add_namespace(ErrorNs.ns)
