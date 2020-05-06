@@ -64,7 +64,7 @@ def list_folder(parent, folder, drive, service):
                 print("GD_download_file is running")
                 GD_download_file(service, f['id'])
                 print("GD_download_file is done")
-                results = add_video(f["title"], f["alternateLink"])
+                added_video = add_video(f["title"], f["alternateLink"])
                 for video in os.listdir(MAIN_DIR):
                     if '.mp4' in video:
                         os.makedirs("pict", exist_ok=True)
@@ -77,14 +77,13 @@ def list_folder(parent, folder, drive, service):
                         os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
                         for vid in os.listdir(os.path.splitext(video)[0]):
                             if '.mp4' in vid:
-                                for element in results:
-                                    if vid == element.name:
-                                        search_similar(element.id,
-                                                       MAIN_DIR + vid.split(".")[0] + '/')
+                                if vid == added_video.name:
+                                    search_similar(added_video.id, MAIN_DIR + vid.split(".")[0] + '/')
                         delete_dir(video.split(".")[0])
         return filelist
     except:
         raise NotFoundError("The object is not found")
+
 
 def partial(total_byte_len, part_size_limit):
     """Function to get parts of video"""
@@ -123,7 +122,7 @@ def GD_download_file(service, file_id):
         return None
 
 
-def add_video(video_name, video_url):
+def add_video(video_name, video_url) -> Video:
     """Function to add video data to database"""
 
     new_video = Video(name=video_name, url=video_url,
