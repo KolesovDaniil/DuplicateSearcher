@@ -14,9 +14,8 @@ from pydrive.drive import GoogleDrive
 from app.database import db
 
 from app.models import Video, VideoHash, Log
-
-from app.exceptions import NotFoundError
-from app.exceptions import ForbiddenError
+from app.exceptions import NotFoundError, ForbiddenError
+from app.config import Config
 
 MAIN_DIR = '/home/DinaKursach/'
 SUBDIR = MAIN_DIR + 'pict/'
@@ -237,6 +236,26 @@ def transliterate(name):
     return name
 
 
-def get_table_link(mail):
+def get_table_link(mail) -> str:
     """Function to get link of GoogleSheets link"""
-    pass
+
+    engine = db.create_engine(Config().SQLALCHEMY_DATABASE_URI, {})
+    query = engine.connect().execute("""SELECT 
+    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
+    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
+    (SELECT count() FROM video_hash WHERE video_id=video1_id)
+    /count(video2_id) * 100 as video_similarity 
+    FROM log GROUP BY video1_id, video2_id HAVING video_similarity<=100
+    UNION
+    SELECT 
+    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
+    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
+    count(video2_id)/
+    (SELECT count() FROM video_hash WHERE video_id=video1_id) * 100 as video_similarity 
+        FROM log 
+        GROUP BY video1_id, video2_id 
+        HAVING video_similarity<=100;""")
+
+    results = [list(row) for row in query]
+
+    return ''
