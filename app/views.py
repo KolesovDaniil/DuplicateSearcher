@@ -12,6 +12,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
 from app.database import db
+
 from app.models import Video, VideoHash, Log
 
 from app.exceptions import NotFoundError
@@ -49,37 +50,36 @@ def connect_to_drive(dir):
 
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
-    #try:
-        filelist = []
-        file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
-        if not file_list:
-            raise ForbiddenError("Object cannot be accessed")
-        for f in file_list:
-            if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
-                filelist.append({"id": f['id'], "title": f['title'],
-                                 "list": list_folder(f['id'], folder, drive, service)})
-            elif f['mimeType'] == 'video/mp4':
-                file = drive.CreateFile({'id': f['id']})
-                GD_download_file(service, f['id'])
-                added_video = add_video(transliterate(f["title"]).replace("_avi", ".avi"), f["alternateLink"])
-                for video in os.listdir(MAIN_DIR):
-                    if '.mp4' in video:
-                        os.makedirs("pict", exist_ok=True)
-                        subprocess.call(
-                            ['ffmpeg', '-i', video, '-vf',
-                             "select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'",
-                             '-vsync', '0', '-an', '-frame_pts', '1',
-                             'pict/%d.jpg'])
-                        os.rename(MAIN_DIR + video, SUBDIR + video)
-                        os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
-                        for vid in os.listdir(os.path.splitext(video)[0]):
-                            if '.mp4' in vid:
-                                if vid == added_video.name:
-                                    search_similar(added_video.id, MAIN_DIR + vid.split(".")[0] + '/')
-                        delete_dir(video.split(".")[0])
-        return filelist
-    #except:
-        raise NotFoundError("The object is not found")
+    # try:
+    filelist = []
+    file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
+    if not file_list:
+        raise ForbiddenError("Object cannot be accessed")
+    for f in file_list:
+        if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
+            filelist.append({"id": f['id'], "title": f['title'],
+                             "list": list_folder(f['id'], folder, drive, service)})
+        elif f['mimeType'] == 'video/mp4':
+            file = drive.CreateFile({'id': f['id']})
+            GD_download_file(service, f['id'])
+            added_video = add_video(transliterate(f["title"]) \
+                                    .replace("_mp4", ".mp4"), f["alternateLink"])
+            for video in os.listdir(MAIN_DIR):
+                if '.mp4' in video:
+                    os.makedirs("pict", exist_ok=True)
+                    subprocess.call(
+                        ['ffmpeg', '-i', video, '-vf',
+                         "select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'",
+                         '-vsync', '0', '-an', '-frame_pts', '1',
+                         'pict/%d.jpg'])
+                    os.rename(MAIN_DIR + video, SUBDIR + video)
+                    os.rename(SUBDIR, MAIN_DIR + os.path.splitext(video)[0] + '/')
+                    search_similar(added_video.id,
+                                   MAIN_DIR + added_video.name.split(".")[0] + '/')
+                    delete_dir(video.split(".")[0])
+    return filelist
+    # except:
+    #     raise NotFoundError("The object is not found")
 
 
 def partial(total_byte_len, part_size_limit):
@@ -97,9 +97,9 @@ def GD_download_file(service, file_id):
     download_url = drive_file.get('downloadUrl')
     total_size = int(drive_file.get('fileSize'))
     video_parts = partial(total_size,
-                          100000000)  # I'm downloading BIG files, so 100M chunk size is fine for me
-    title = transliterate(drive_file.get('title')).replace("_avi", ".avi")
-    original_filename = transliterate(drive_file.get('originalFilename')).replace("_avi", ".avi")
+                          100000000)
+    title = transliterate(drive_file.get('title')).replace("_mp4", ".mp4")
+    original_filename = transliterate(drive_file.get('originalFilename')).replace("_mp4", ".mp4")
     filename = './' + original_filename
     if download_url:
         with open(filename, 'wb') as file:
@@ -142,6 +142,7 @@ def write_logs(video1, timecode1, video2, timecode2):
 
     log = Log(video1_id=video1, time_code1=timecode1, video2_id=video2, time_code2=timecode2)
     db.session.add(log)
+    db.session.commit()
 
 
 def add_hash(video_id, timecode, video_hash):
@@ -149,6 +150,7 @@ def add_hash(video_id, timecode, video_hash):
 
     hash = VideoHash(video_id=video_id, time_code=timecode, hash=video_hash)
     db.session.add(hash)
+    db.session.commit()
 
 
 def hash_distance(left_hash, right_hash):
@@ -211,23 +213,28 @@ def delete_dir(folder):
     shutil.rmtree(MAIN_DIR + folder, ignore_errors=True)
     print(MAIN_DIR + folder)
 
+
 def transliterate(name):
-   slovar = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e',
-      'ж':'zh','з':'z','и':'i','й':'i','к':'k','л':'l','м':'m','н':'n',
-      'о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h',
-      'ц':'c','ч':'cz','ш':'sh','щ':'scz','ъ':'','ы':'y','ь':'','э':'e',
-      'ю':'u','я':'ja', 'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E',
-      'Ж':'ZH','З':'Z','И':'I','Й':'I','К':'K','Л':'L','М':'M','Н':'N',
-      'О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H',
-      'Ц':'C','Ч':'CZ','Ш':'SH','Щ':'SCH','Ъ':'','Ы':'y','Ь':'','Э':'E',
-      'Ю':'U','Я':'YA',',':'','?':'',' ':'_','~':'','!':'','@':'','#':'',
-      '$':'','%':'','^':'','&':'','*':'','(':'',')':'','-':'','=':'','+':'',
-      ':':'',';':'','<':'','>':'','\'':'','"':'','\\':'','/':'','№':'',
-      '[':'',']':'','{':'','}':'','ґ':'','ї':'', 'є':'','Ґ':'g','Ї':'i',
-      'Є':'e', '—':'', '.':'_'}
-   for key in slovar:
-      name = name.replace(key, slovar[key])
-   return name
+    slovar = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+              'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'i', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+              'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h',
+              'ц': 'c', 'ч': 'cz', 'ш': 'sh', 'щ': 'scz', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e',
+              'ю': 'u', 'я': 'ja', 'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E',
+              'Ё': 'E',
+              'Ж': 'ZH', 'З': 'Z', 'И': 'I', 'Й': 'I', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N',
+              'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H',
+              'Ц': 'C', 'Ч': 'CZ', 'Ш': 'SH', 'Щ': 'SCH', 'Ъ': '', 'Ы': 'y', 'Ь': '', 'Э': 'E',
+              'Ю': 'U', 'Я': 'YA', ',': '', '?': '', ' ': '_', '~': '', '!': '', '@': '', '#': '',
+              '$': '', '%': '', '^': '', '&': '', '*': '', '(': '', ')': '', '-': '', '=': '',
+              '+': '',
+              ':': '', ';': '', '<': '', '>': '', '\'': '', '"': '', '\\': '', '/': '', '№': '',
+              '[': '', ']': '', '{': '', '}': '', 'ґ': '', 'ї': '', 'є': '', 'Ґ': 'g', 'Ї': 'i',
+              'Є': 'e', '—': '', '.': '_'}
+
+    for key in slovar:
+        name = name.replace(key, slovar[key])
+
+    return name
 
 
 def get_table_link(mail):
