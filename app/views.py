@@ -49,7 +49,7 @@ def connect_to_drive(dir):
 
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
-    try:
+    #try:
         filelist = []
         file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
         if not file_list:
@@ -59,12 +59,9 @@ def list_folder(parent, folder, drive, service):
                 filelist.append({"id": f['id'], "title": f['title'],
                                  "list": list_folder(f['id'], folder, drive, service)})
             elif f['mimeType'] == 'video/mp4':
-                print("video is found")
                 file = drive.CreateFile({'id': f['id']})
-                print("GD_download_file is running")
                 GD_download_file(service, f['id'])
-                print("GD_download_file is done")
-                added_video = add_video(f["title"], f["alternateLink"])
+                added_video = add_video(transliterate(f["title"]).replace("_avi", ".avi"), f["alternateLink"])
                 for video in os.listdir(MAIN_DIR):
                     if '.mp4' in video:
                         os.makedirs("pict", exist_ok=True)
@@ -81,7 +78,7 @@ def list_folder(parent, folder, drive, service):
                                     search_similar(added_video.id, MAIN_DIR + vid.split(".")[0] + '/')
                         delete_dir(video.split(".")[0])
         return filelist
-    except:
+    #except:
         raise NotFoundError("The object is not found")
 
 
@@ -96,16 +93,13 @@ def partial(total_byte_len, part_size_limit):
 
 def GD_download_file(service, file_id):
     """Function to download video"""
-    print(file_id)
     drive_file = service.files().get(fileId=file_id).execute()
     download_url = drive_file.get('downloadUrl')
     total_size = int(drive_file.get('fileSize'))
     video_parts = partial(total_size,
                           100000000)  # I'm downloading BIG files, so 100M chunk size is fine for me
-    print("s: ", video_parts)
-    title = drive_file.get('title')
-    original_filename = drive_file.get('originalFilename')
-    print("ddd ", drive_file)
+    title = transliterate(drive_file.get('title')).replace("_avi", ".avi")
+    original_filename = transliterate(drive_file.get('originalFilename')).replace("_avi", ".avi")
     filename = './' + original_filename
     if download_url:
         with open(filename, 'wb') as file:
@@ -216,6 +210,24 @@ def delete_dir(folder):
     """Function delete created directory"""
     shutil.rmtree(MAIN_DIR + folder, ignore_errors=True)
     print(MAIN_DIR + folder)
+
+def transliterate(name):
+   slovar = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e',
+      'ж':'zh','з':'z','и':'i','й':'i','к':'k','л':'l','м':'m','н':'n',
+      'о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h',
+      'ц':'c','ч':'cz','ш':'sh','щ':'scz','ъ':'','ы':'y','ь':'','э':'e',
+      'ю':'u','я':'ja', 'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E',
+      'Ж':'ZH','З':'Z','И':'I','Й':'I','К':'K','Л':'L','М':'M','Н':'N',
+      'О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H',
+      'Ц':'C','Ч':'CZ','Ш':'SH','Щ':'SCH','Ъ':'','Ы':'y','Ь':'','Э':'E',
+      'Ю':'U','Я':'YA',',':'','?':'',' ':'_','~':'','!':'','@':'','#':'',
+      '$':'','%':'','^':'','&':'','*':'','(':'',')':'','-':'','=':'','+':'',
+      ':':'',';':'','<':'','>':'','\'':'','"':'','\\':'','/':'','№':'',
+      '[':'',']':'','{':'','}':'','ґ':'','ї':'', 'є':'','Ґ':'g','Ї':'i',
+      'Є':'e', '—':'', '.':'_'}
+   for key in slovar:
+      name = name.replace(key, slovar[key])
+   return name
 
 
 def get_table_link(mail):
