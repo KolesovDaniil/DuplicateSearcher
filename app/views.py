@@ -273,11 +273,12 @@ def get_table_link(mail) -> str:
 
     CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
 
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE,
-                                                                   ['https://www.googleapis.com/auth/spreadsheets',
-                                                                    'https://www.googleapis.com/auth/drive'])
-    httpAuth = credentials.authorize(httplib2.Http())
-    service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+    credentials = ServiceAccountCredentials \
+        .from_json_keyfile_name(CREDENTIALS_FILE,
+                                ['https://www.googleapis.com/auth/spreadsheets',
+                                 'https://www.googleapis.com/auth/drive'])
+    http_auth = credentials.authorize(httplib2.Http())
+    service = apiclient.discovery.build('sheets', 'v4', http=http_auth)
 
     spreadsheet = service.spreadsheets().create(body={
         'properties': {'title': 'Results', 'locale': 'ru_RU'},
@@ -286,16 +287,16 @@ def get_table_link(mail) -> str:
                                    'title': '1'}}]
     }).execute()
 
-    driveService = apiclient.discovery.build('drive', 'v3', http=httpAuth)
+    drive_service = apiclient.discovery.build('drive', 'v3', http=http_auth)
 
     if mail:
-        shareRes = driveService.permissions().create(
+        share_res = drive_service.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
             body={'type': 'user', 'role': 'writer', 'emailAddress': mail},
             fields='id'
         ).execute()
     else:
-        shareRes = driveService.permissions().create(
+        share_res = drive_service.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
             body={'type': 'anyone', 'role': 'writer'},
             fields='id'
