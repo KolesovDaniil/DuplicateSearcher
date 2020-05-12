@@ -48,17 +48,28 @@ def connect_to_drive(dir):
     gauth.SaveCredentialsFile("mycreds.txt")
     drive = GoogleDrive(gauth)
     service = gauth.service
+    check_access(dir, drive)
     list_folder(dir, SUBDIR, drive, service)
+
+
+def check_access(parent, drive):
+    try:
+        file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
+        if not file_list:
+            raise ForbiddenError("Object cannot be accessed")
+    except:
+        raise NotFoundError("The object is not found")
 
 
 def list_folder(parent, folder, drive, service):
     """Function to get all videos"""
-    # try:
     filelist = []
     file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
+    print("blabla1")
     if not file_list:
         raise ForbiddenError("Object cannot be accessed")
     for f in file_list:
+        print("blabla_2")
         if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
             filelist.append({"id": f['id'], "title": f['title'],
                              "list": list_folder(f['id'], folder, drive, service)})
@@ -81,8 +92,6 @@ def list_folder(parent, folder, drive, service):
                                    MAIN_DIR + added_video.name.split(".")[0] + '/')
                     delete_dir(video.split(".")[0])
     return filelist
-    # except:
-    #     raise NotFoundError("The object is not found")
 
 
 def partial(total_byte_len, part_size_limit):
@@ -285,7 +294,6 @@ def get_table_link(mail) -> str:
             body={'type': 'user', 'role': 'writer', 'emailAddress': mail},
             fields='id'
         ).execute()
-
     else:
         shareRes = driveService.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
@@ -297,12 +305,12 @@ def get_table_link(mail) -> str:
     result.extend(results)
 
     table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet['spreadsheetId'], body={
-            "valueInputOption": "USER_ENTERED",
-            "data": [
-                {"range": "1",
-                 "majorDimension": "ROWS",
-                 "values": result}
-            ]
+        "valueInputOption": "USER_ENTERED",
+        "data": [
+            {"range": "1",
+             "majorDimension": "ROWS",
+             "values": result}
+        ]
     }).execute()
 
     return 'https://docs.google.com/spreadsheets/d/' + spreadsheet['spreadsheetId']
