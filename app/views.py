@@ -25,13 +25,7 @@ MAIN_DIR = '/home/DinaKursach/'
 SUBDIR = MAIN_DIR + 'pict/'
 
 
-def process(id, mail=''):
-    connect_to_drive(id)
-    return get_table_link(mail)
-
-
-def connect_to_drive(dir):
-    """Function to connect to Google Drive"""
+def check_access(dir):
     gauth = GoogleAuth()
     # Try to load saved client credentials
     gauth.LoadCredentialsFile("mycreds.txt")
@@ -47,29 +41,29 @@ def connect_to_drive(dir):
     # Save the current credentials to a file
     gauth.SaveCredentialsFile("mycreds.txt")
     drive = GoogleDrive(gauth)
-    service = gauth.service
-    check_access(dir, drive)
-    list_folder(dir, SUBDIR, drive, service)
-
-
-def check_access(parent, drive):
     try:
-        file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
+        file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % dir}).GetList()
         if not file_list:
             raise ForbiddenError("Object cannot be accessed")
     except:
         raise NotFoundError("The object is not found")
+    return gauth
 
 
-def list_folder(parent, folder, drive, service):
+def process(id, mail='', gauth, service, spreadsheet_id):
+    list_folder(id, SUBDIR, gauth, service, spreadsheet_id)
+    return get_table_link(mail)
+
+
+def list_folder(parent, folder, gauth, service, spreadsheet_id):
     """Function to get all videos"""
+    drive = GoogleDrive(gauth)
+    service = gauth.service
     filelist = []
     file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % parent}).GetList()
-    print("blabla1")
     if not file_list:
         raise ForbiddenError("Object cannot be accessed")
     for f in file_list:
-        print("blabla_2")
         if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
             filelist.append({"id": f['id'], "title": f['title'],
                              "list": list_folder(f['id'], folder, drive, service)})
@@ -91,6 +85,8 @@ def list_folder(parent, folder, drive, service):
                     search_similar(added_video.id,
                                    MAIN_DIR + added_video.name.split(".")[0] + '/')
                     delete_dir(video.split(".")[0])
+                    get_table_link(service, spreadsheet_id)
+
     return filelist
 
 
@@ -249,28 +245,7 @@ def transliterate(name):
     return name
 
 
-def get_table_link(mail) -> str:
-    """Function to get link of GoogleSheets link"""
-
-    engine = db.create_engine(Config().SQLALCHEMY_DATABASE_URI, {})
-    query = engine.connect().execute("""SELECT 
-    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
-    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
-    (SELECT count() FROM video_hash WHERE video_id=video1_id)
-    /count(video2_id) * 100 as video_similarity 
-    FROM log GROUP BY video1_id, video2_id HAVING video_similarity<=100
-    UNION
-    SELECT 
-    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
-    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
-    count(video2_id)/
-    (SELECT count() FROM video_hash WHERE video_id=video1_id) * 100 as video_similarity 
-        FROM log 
-        GROUP BY video1_id, video2_id 
-        HAVING video_similarity<=100;""")
-
-    results = [list(row) for row in query]
-
+def create_result_table(mail):
     CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
 
     credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE,
@@ -300,11 +275,35 @@ def get_table_link(mail) -> str:
             body={'type': 'anyone', 'role': 'writer'},
             fields='id'
         ).execute()
+    return service, spreadsheet['spreadsheetId']
+
+
+def get_table_link(service, spreadsheet_id):
+    """Function to get link of GoogleSheets link"""
+
+    engine = db.create_engine(Config().SQLALCHEMY_DATABASE_URI, {})
+    query = engine.connect().execute("""SELECT 
+    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
+    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
+    (SELECT count() FROM video_hash WHERE video_id=video1_id)
+    /count(video2_id) * 100 as video_similarity 
+    FROM log GROUP BY video1_id, video2_id HAVING video_similarity<=100
+    UNION
+    SELECT 
+    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
+    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
+    count(video2_id)/
+    (SELECT count() FROM video_hash WHERE video_id=video1_id) * 100 as video_similarity 
+        FROM log 
+        GROUP BY video1_id, video2_id 
+        HAVING video_similarity<=100;""")
+
+    results = [list(row) for row in query]
 
     result = [["video1_url", "video1_url", "similarity"]]
     result.extend(results)
 
-    table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet['spreadsheetId'], body={
+    table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body={
         "valueInputOption": "USER_ENTERED",
         "data": [
             {"range": "1",
@@ -312,5 +311,3 @@ def get_table_link(mail) -> str:
              "values": result}
         ]
     }).execute()
-
-    return 'https://docs.google.com/spreadsheets/d/' + spreadsheet['spreadsheetId']

@@ -21,7 +21,11 @@ class VideoDuplicateProc(Resource):
     def post(self):
         """Get GoogleSheets link"""
 
+        gauth = views.check_access(id)
+
         id = VideoDuplicateNs.ns.payload['id']
         email = VideoDuplicateNs.ns.payload['email']
 
-        return {'table', views.process(id, email)}, HTTPStatus.CREATED
+        service, spreadsheet_id = views.create_result_table(email)
+
+        return {'table', views.process(id, email, gauth, service, spreadsheet_id)}, HTTPStatus.CREATED
