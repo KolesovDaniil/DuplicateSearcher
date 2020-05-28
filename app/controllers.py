@@ -27,5 +27,6 @@ class VideoDuplicateProc(Resource):
         email = VideoDuplicateNs.ns.payload['email']
 
         service, spreadsheet_id = views.create_result_table(email)
+        #return 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id
 
         return {'table', views.process(id, email, gauth, service, spreadsheet_id)}, HTTPStatus.CREATED
