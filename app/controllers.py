@@ -33,13 +33,13 @@ class VideoDuplicateProc(Resource):
             HTTPStatus.ACCEPTED
 
 
-@VideoDuplicateNs.ns.route('/<TaskId>/status')
+@TaskNs.ns.route('/<TaskId>/status')
 class TaskStatus(Resource):
-    @VideoDuplicateNs.ns.doc({'folderId': 'ID of the task'})
-    @VideoDuplicateNs.ns.response(HTTPStatus.OK, HTTPStatus.OK.phrase,
-                                  model=TaskNs.get_task_id_model)
-    @VideoDuplicateNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
-                                  model=ErrorNs.error_model)
+    @TaskNs.ns.doc({'folderId': 'ID of the task'})
+    @TaskNs.ns.response(HTTPStatus.OK, HTTPStatus.OK.phrase,
+                        model=TaskNs.get_task_id_model)
+    @TaskNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
+                        model=ErrorNs.error_model)
     def get(self):
         """"""
 
