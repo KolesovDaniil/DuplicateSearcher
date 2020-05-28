@@ -34,7 +34,7 @@ class VideoDuplicateProc(Resource):
             HTTPStatus.ACCEPTED
 
 
-@TaskNs.ns.route('/<TaskId>/status')
+@TaskNs.ns.route('/<taskId>/status')
 class TaskStatus(Resource):
     @TaskNs.ns.doc({'folderId': 'ID of the task'})
     @TaskNs.ns.response(HTTPStatus.OK, HTTPStatus.OK.phrase,
