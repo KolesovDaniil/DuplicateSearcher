@@ -2,28 +2,28 @@ from http import HTTPStatus
 
 from flask_restplus import Resource
 
-from app.namespaces import VideoDuplicateNs, TaskNs, ErrorNs
+from app.namespaces import FoldersNs, TaskNs, ErrorNs
 from app import views
 from app import tasks
 
 
-@VideoDuplicateNs.ns.route('/<folderId>/search')
+@FoldersNs.ns.route('/<folderId>/search')
 class VideoDuplicateProc(Resource):
-    @VideoDuplicateNs.ns.doc({'folderId': 'ID of google drive folder'})
-    @VideoDuplicateNs.ns.expect(VideoDuplicateNs.post_expect_model)
-    @VideoDuplicateNs.ns.response(HTTPStatus.ACCEPTED, HTTPStatus.ACCEPTED.phrase,
-                                  model=VideoDuplicateNs.post_response_model)
-    @VideoDuplicateNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
-                                  model=ErrorNs.error_model)
-    @VideoDuplicateNs.ns.response(HTTPStatus.FORBIDDEN, HTTPStatus.FORBIDDEN.phrase,
-                                  model=ErrorNs.error_model)
-    @VideoDuplicateNs.ns.marshal_with(fields=VideoDuplicateNs.post_response_model,
-                                      code=HTTPStatus.CREATED)
+    @FoldersNs.ns.doc({'folderId': 'ID of google drive folder'})
+    @FoldersNs.ns.expect(FoldersNs.post_expect_model)
+    @FoldersNs.ns.response(HTTPStatus.ACCEPTED, HTTPStatus.ACCEPTED.phrase,
+                           model=FoldersNs.post_response_model)
+    @FoldersNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
+                           model=ErrorNs.error_model)
+    @FoldersNs.ns.response(HTTPStatus.FORBIDDEN, HTTPStatus.FORBIDDEN.phrase,
+                           model=ErrorNs.error_model)
+    @FoldersNs.ns.marshal_with(fields=FoldersNs.post_response_model,
+                               code=HTTPStatus.CREATED)
     def post(self):
         """Get GoogleSheets link"""
 
-        id = VideoDuplicateNs.ns.payload['id']
-        email = VideoDuplicateNs.ns.payload['email']
+        id = FoldersNs.ns.payload['id']
+        email = FoldersNs.ns.payload['email']
         table = tasks.process(id, email)
 
         gauth = views.check_access(id)
@@ -34,7 +34,7 @@ class VideoDuplicateProc(Resource):
             HTTPStatus.ACCEPTED
 
 
-@TaskNs.ns.route('/<TaskId>/status')
+@TaskNs.ns.route('/<taskId>/status')
 class TaskStatus(Resource):
     @TaskNs.ns.doc({'folderId': 'ID of the task'})
     @TaskNs.ns.response(HTTPStatus.OK, HTTPStatus.OK.phrase,

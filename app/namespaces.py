@@ -1,10 +1,10 @@
 from flask_restplus import Namespace, fields
 
 
-class VideoDuplicateNs:
+class FoldersNs:
     """VideoDuplicate flask_restplus Namespace"""
 
-    ns = Namespace('')
+    ns = Namespace('folders')
 
     post_expect_model = ns.model('PostExpectModel',
                                  {'email': fields.String()})
@@ -17,7 +17,7 @@ class VideoDuplicateNs:
 class TaskNs:
     """Task flask_restplus Namespace"""
 
-    ns = Namespace('')
+    ns = Namespace('tasks')
 
     get_task_id_model = ns.model('GetTaskIdModel',
                                  {'taskStatus': fields.String()})
