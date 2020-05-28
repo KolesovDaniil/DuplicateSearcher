@@ -308,19 +308,14 @@ def insert_results(service, spreadsheet_id):
         HAVING video_similarity=100;""")
 
     results = [list(row) for row in query]
-    sheet_count = len(results) % 100000 + 1
-    chunk_size = len(results) // sheet_count
-    result = [results[i:i + chunk_size] for i in range(0, len(results), chunk_size)]
-
-    for lst in result:
-        results = [["video1_url", "video1_url", "similarity"]]
-        results.extend(lst)
-        table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body={
-            "valueInputOption": "USER_ENTERED",
-            "data": [
-                {"range": str(result.index(lst)),
-                 "majorDimension": "ROWS",
-                 "values": results}
-            ]
-        }).execute()
+    result = [["video1_url", "video1_url", "similarity"]]
+    result.extend(results)
+    table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body={
+        "valueInputOption": "USER_ENTERED",
+        "data": [
+            {"range": "1",
+             "majorDimension": "ROWS",
+             "values": result}
+        ]
+    }).execute()
 
