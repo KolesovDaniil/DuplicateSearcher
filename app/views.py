@@ -52,7 +52,6 @@ def check_access(dir):
 
 def process(id, mail='', gauth, service, spreadsheet_id):
     list_folder(id, SUBDIR, gauth, service, spreadsheet_id)
-    return get_table_link(mail)
 
 
 def list_folder(parent, folder, gauth, service, spreadsheet_id):
@@ -85,7 +84,7 @@ def list_folder(parent, folder, gauth, service, spreadsheet_id):
                     search_similar(added_video.id,
                                    MAIN_DIR + added_video.name.split(".")[0] + '/')
                     delete_dir(video.split(".")[0])
-                    get_table_link(service, spreadsheet_id)
+                    insert_results(service, spreadsheet_id)
 
     return filelist
 
@@ -260,7 +259,6 @@ def create_result_table(mail):
                                    'sheetId': 0,
                                    'title': '1'}}]
     }).execute()
-
     driveService = apiclient.discovery.build('drive', 'v3', http=httpAuth)
 
     if mail:
@@ -278,7 +276,7 @@ def create_result_table(mail):
     return service, spreadsheet['spreadsheetId']
 
 
-def get_table_link(service, spreadsheet_id):
+def insert_results(service, spreadsheet_id):
     """Function to get link of GoogleSheets link"""
 
     engine = db.create_engine(Config().SQLALCHEMY_DATABASE_URI, {})
@@ -287,7 +285,9 @@ def get_table_link(service, spreadsheet_id):
     (SELECT url FROM video WHERE id=video2_id) AS video_2, 
     (SELECT count() FROM video_hash WHERE video_id=video1_id)
     /count(video2_id) * 100 as video_similarity 
-    FROM log GROUP BY video1_id, video2_id HAVING video_similarity<=100
+        FROM log 
+        GROUP BY video1_id, video2_id 
+        HAVING video_similarity<100
     UNION
     SELECT 
     (SELECT url FROM video WHERE id=video1_id) AS video_1, 
@@ -296,18 +296,31 @@ def get_table_link(service, spreadsheet_id):
     (SELECT count() FROM video_hash WHERE video_id=video1_id) * 100 as video_similarity 
         FROM log 
         GROUP BY video1_id, video2_id 
-        HAVING video_similarity<=100;""")
+        HAVING video_similarity<100
+    UNION
+    SELECT 
+    (SELECT url FROM video WHERE id=video1_id) AS video_1, 
+    (SELECT url FROM video WHERE id=video2_id) AS video_2, 
+    count(video2_id)/
+    (SELECT count() FROM video_hash WHERE video_id=video1_id) * 100 as video_similarity 
+        FROM log 
+        GROUP BY video1_id, video2_id 
+        HAVING video_similarity=100;""")
 
     results = [list(row) for row in query]
+    sheet_count = len(results) % 100000 + 1
+    chunk_size = len(results) // sheet_count
+    result = [results[i:i + chunk_size] for i in range(0, len(results), chunk_size)]
 
-    result = [["video1_url", "video1_url", "similarity"]]
-    result.extend(results)
+    for lst in result:
+        results = [["video1_url", "video1_url", "similarity"]]
+        results.extend(lst)
+        table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body={
+            "valueInputOption": "USER_ENTERED",
+            "data": [
+                {"range": str(result.index(lst)),
+                 "majorDimension": "ROWS",
+                 "values": results}
+            ]
+        }).execute()
 
-    table = service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body={
-        "valueInputOption": "USER_ENTERED",
-        "data": [
-            {"range": "1",
-             "majorDimension": "ROWS",
-             "values": result}
-        ]
-    }).execute()
