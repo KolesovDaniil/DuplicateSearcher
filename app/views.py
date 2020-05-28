@@ -74,7 +74,7 @@ def list_folder(parent, folder, gauth, spreadsheet_service, spreadsheet_id):
     for f in file_list:
         if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
             filelist.append({"id": f['id'], "title": f['title'],
-                             "list": list_folder(f['id'], folder, drive, service)})
+                             "list": list_folder(f['id'], folder, gauth, spreadsheet_service, spreadsheet_id)})
         elif f['mimeType'] == 'video/mp4':
             file = drive.CreateFile({'id': f['id']})
             GD_download_file(service, f['id'])
