@@ -17,13 +17,14 @@ class VideoDuplicateProc(Resource):
                                   model=ErrorNs.error_model)
     @VideoDuplicateNs.ns.response(HTTPStatus.FORBIDDEN, HTTPStatus.FORBIDDEN.phrase,
                                   model=ErrorNs.error_model)
-    @VideoDuplicateNs.ns.marshal_with(VideoDuplicateNs.post_response_model,
+    @VideoDuplicateNs.ns.marshal_with(fields=VideoDuplicateNs.post_response_model,
                                       code=HTTPStatus.CREATED)
     def post(self):
         """Get GoogleSheets link"""
 
         id = VideoDuplicateNs.ns.payload['id']
         email = VideoDuplicateNs.ns.payload['email']
+        table = tasks.process(id, email)
 
         gauth = views.check_access(id)
         service, spreadsheet_id = views.create_result_table(email)
