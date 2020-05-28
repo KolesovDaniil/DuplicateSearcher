@@ -3,7 +3,7 @@
 from flask import Flask, Blueprint
 from flask_restplus import Api
 
-from app.namespaces import ErrorNs, VideoDuplicateNs
+from app.namespaces import ErrorNs, VideoDuplicateNs, TaskNs
 
 
 def register(app: Flask) -> None:
@@ -32,4 +32,5 @@ def create_api(blueprint: Blueprint) -> None:
               description='Web Service for Video Duplicate Recognition')
 
     api.add_namespace(VideoDuplicateNs.ns)
+    api.add_namespace(TaskNs.ns)
     api.add_namespace(ErrorNs.ns)
