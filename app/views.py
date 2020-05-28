@@ -39,6 +39,10 @@ def check_access(dir):
     return gauth
 
 
+def check_task_existing():
+    pass
+
+
 def create_result_table(mail):
 
     credentials = ServiceAccountCredentials. \

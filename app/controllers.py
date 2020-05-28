@@ -2,14 +2,14 @@ from http import HTTPStatus
 
 from flask_restplus import Resource
 
-from app.namespaces import VideoDuplicateNs, ErrorNs
+from app.namespaces import VideoDuplicateNs, TaskNs, ErrorNs
 from app import views
 from app import tasks
 
 
 @VideoDuplicateNs.ns.route('/<folderId>/search')
 class VideoDuplicateProc(Resource):
-    @VideoDuplicateNs.ns.doc({'folderId': 'ID of file or folder'})
+    @VideoDuplicateNs.ns.doc({'folderId': 'ID of google drive folder'})
     @VideoDuplicateNs.ns.expect(VideoDuplicateNs.post_expect_model)
     @VideoDuplicateNs.ns.response(HTTPStatus.ACCEPTED, HTTPStatus.ACCEPTED.phrase,
                                   model=VideoDuplicateNs.post_response_model)
@@ -35,9 +35,14 @@ class VideoDuplicateProc(Resource):
 
 @VideoDuplicateNs.ns.route('/<TaskId>/status')
 class TaskStatus(Resource):
+    @VideoDuplicateNs.ns.doc({'folderId': 'ID of the task'})
+    @VideoDuplicateNs.ns.response(HTTPStatus.OK, HTTPStatus.OK.phrase,
+                                  model=TaskNs.get_task_id_model)
     @VideoDuplicateNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
                                   model=ErrorNs.error_model)
     def get(self):
         """"""
+
+        views.check_task_existing()
 
         return views.get_task_status(), HTTPStatus.OK
