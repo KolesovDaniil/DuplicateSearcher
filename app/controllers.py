@@ -19,19 +19,17 @@ class VideoDuplicateProc(Resource):
                            model=ErrorNs.error_model)
     @FoldersNs.ns.marshal_with(fields=FoldersNs.post_response_model,
                                code=HTTPStatus.CREATED)
-    def post(self):
-        """Get GoogleSheets link"""
+    def post(self, folderId):
+        """Start searching duplicates"""
 
-        id = FoldersNs.ns.payload['id']
         email = FoldersNs.ns.payload['email']
-        table = tasks.process(id, email)
 
-        gauth = views.check_access(id)
+        gauth = views.check_access(folderId)
         service, spreadsheet_id = views.create_result_table(email)
-        tasks.process(id, gauth, service, spreadsheet_id)
+        task = tasks.process.delay(folderId, gauth, service, spreadsheet_id)
 
-        return {'table', 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id}, \
-            HTTPStatus.ACCEPTED
+        return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
+                'taskId': task.id}, HTTPStatus.ACCEPTED
 
 
 @TaskNs.ns.route('/<taskId>/status')
@@ -41,9 +39,9 @@ class TaskStatus(Resource):
                         model=TaskNs.get_task_id_model)
     @TaskNs.ns.response(HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND.phrase,
                         model=ErrorNs.error_model)
-    def get(self):
-        """"""
+    def get(self, taskId):
+        """Get task status"""
 
         views.check_task_existing()
 
-        return views.get_task_status(), HTTPStatus.OK
+        return {'taskStatus': views.get_task_status(taskId)}, HTTPStatus.OK

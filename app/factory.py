@@ -3,11 +3,11 @@
 from flask import Flask
 
 from app.database import db
-from app.config import Config
+from app.config import AppConfig
 from app.registration import register
 
 
-def create_app(app_config: object = Config()) -> Flask:
+def create_app(app_config: object = AppConfig()) -> Flask:
     """Create new application object"""
 
     # App creation

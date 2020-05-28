@@ -11,7 +11,7 @@ class FoldersNs:
 
     post_response_model = ns.model('PostResponseModel',
                                    {'tableLink': fields.String(),
-                                    'statusId': fields.String()})
+                                    'taskId': fields.String()})
 
 
 class TaskNs:

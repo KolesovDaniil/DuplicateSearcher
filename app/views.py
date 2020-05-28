@@ -5,11 +5,12 @@ from __future__ import division
 import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
-
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+from celery.result import AsyncResult
 
 from app.exceptions import NotFoundError, ForbiddenError
+from app.celery import celery_app
 
 CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
 
@@ -75,5 +76,9 @@ def create_result_table(mail):
     return service, spreadsheet['spreadsheetId']
 
 
-def get_task_status():
-    pass
+def get_task_status(task_id: str) -> str:
+    """"""
+
+    task = AsyncResult(task_id, app=celery_app)
+
+    return task.status

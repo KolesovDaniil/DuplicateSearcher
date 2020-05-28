@@ -5,7 +5,7 @@ import os
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 
-class Config(object):
+class AppConfig:
     """"""
 
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
