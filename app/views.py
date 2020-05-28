@@ -1,4 +1,4 @@
-"""Module with view functions"""
+﻿"""Module with view functions"""
 
 from __future__ import division
 from PIL import Image
@@ -50,11 +50,20 @@ def check_access(dir):
     return gauth
 
 
-def process(id, mail='', gauth, service, spreadsheet_id):
+def process(id, gauth, service, spreadsheet_id):
     list_folder(id, SUBDIR, gauth, service, spreadsheet_id)
 
 
-def list_folder(parent, folder, gauth, service, spreadsheet_id):
+def partial(total_byte_len, part_size_limit):
+    """Function to get parts of video"""
+    video_parts = []
+    for p in range(0, total_byte_len, part_size_limit):
+        last = min(total_byte_len - 1, p + part_size_limit - 1)
+        video_parts.append([p, last])
+    return video_parts
+
+
+def list_folder(parent, folder, gauth, spreadsheet_service, spreadsheet_id):
     """Function to get all videos"""
     drive = GoogleDrive(gauth)
     service = gauth.service
@@ -84,18 +93,9 @@ def list_folder(parent, folder, gauth, service, spreadsheet_id):
                     search_similar(added_video.id,
                                    MAIN_DIR + added_video.name.split(".")[0] + '/')
                     delete_dir(video.split(".")[0])
-                    insert_results(service, spreadsheet_id)
+                    insert_results(spreadsheet_service, spreadsheet_id)
 
     return filelist
-
-
-def partial(total_byte_len, part_size_limit):
-    """Function to get parts of video"""
-    video_parts = []
-    for p in range(0, total_byte_len, part_size_limit):
-        last = min(total_byte_len - 1, p + part_size_limit - 1)
-        video_parts.append([p, last])
-    return video_parts
 
 
 def GD_download_file(service, file_id):
@@ -250,8 +250,8 @@ def create_result_table(mail):
     credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE,
                                                                    ['https://www.googleapis.com/auth/spreadsheets',
                                                                     'https://www.googleapis.com/auth/drive'])
-    httpAuth = credentials.authorize(httplib2.Http())
-    service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+    http_auth = credentials.authorize(httplib2.Http())
+    service = apiclient.discovery.build('sheets', 'v4', http=http_auth)
 
     spreadsheet = service.spreadsheets().create(body={
         'properties': {'title': 'Results', 'locale': 'ru_RU'},
@@ -259,20 +259,21 @@ def create_result_table(mail):
                                    'sheetId': 0,
                                    'title': '1'}}]
     }).execute()
-    driveService = apiclient.discovery.build('drive', 'v3', http=httpAuth)
+    drive_service = apiclient.discovery.build('drive', 'v3', http=http_auth)
 
     if mail:
-        shareRes = driveService.permissions().create(
+        shareRes = drive_service.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
             body={'type': 'user', 'role': 'writer', 'emailAddress': mail},
             fields='id'
         ).execute()
     else:
-        shareRes = driveService.permissions().create(
+        shareRes = drive_service.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
             body={'type': 'anyone', 'role': 'writer'},
             fields='id'
         ).execute()
+    print(spreadsheet['spreadsheetId'])
     return service, spreadsheet['spreadsheetId']
 
 
