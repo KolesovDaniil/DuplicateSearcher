@@ -21,18 +21,14 @@ class VideoDuplicateProc(Resource):
                                code=HTTPStatus.CREATED)
     def post(self, folderId):
         """Start searching duplicates"""
-
         email = FoldersNs.ns.payload['email']
 
         views.check_access(folderId)
         spreadsheet_id = views.create_result_table(email)
-        tasks.process(folderId, spreadsheet_id)
+        task = tasks.process.delay(folderId, spreadsheet_id)
 
-        # return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
-        #         'taskId': task.id}, HTTPStatus.ACCEPTED
-
-        return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id}, \
-               HTTPStatus.ACCEPTED
+        return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
+                'taskId': task.id}, HTTPStatus.ACCEPTED
 
 
 @TaskNs.ns.route('/<taskId>/status')

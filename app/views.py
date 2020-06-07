@@ -10,7 +10,7 @@ from pydrive.drive import GoogleDrive
 from celery.result import AsyncResult
 
 from app.exceptions import NotFoundError, ForbiddenError
-from app.celery import celery_app
+from scheduler.celery import celery_app
 from app.exceptions import BadRequestError
 
 CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
