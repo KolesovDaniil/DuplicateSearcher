@@ -9,3 +9,8 @@ class NotFoundError(Exception):
 class ForbiddenError(Exception):
     """Exception for forbidden error"""
     pass
+
+
+class BadRequestError(Exception):
+    """"""
+    pass

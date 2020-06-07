@@ -26,10 +26,13 @@ class VideoDuplicateProc(Resource):
 
         views.check_access(folderId)
         spreadsheet_id = views.create_result_table(email)
-        task = tasks.process.delay(folderId,spreadsheet_id)
+        tasks.process(folderId, spreadsheet_id)
 
-        return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
-                'taskId': task.id}, HTTPStatus.ACCEPTED
+        # return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
+        #         'taskId': task.id}, HTTPStatus.ACCEPTED
+
+        return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id}, \
+               HTTPStatus.ACCEPTED
 
 
 @TaskNs.ns.route('/<taskId>/status')

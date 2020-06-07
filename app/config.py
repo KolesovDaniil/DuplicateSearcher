@@ -14,6 +14,3 @@ class AppConfig:
     RESTPLUS_MASK_SWAGGER = False
     RESTPLUS_VALIDATE = True
     ERROR_404_HELP = False
-    CELERY_ACCEPT_CONTENT = ['pickle']
-    CELERY_TASK_SERIALIZER = 'pickle'
-    CELERY_RESULT_SERIALIZER = 'pickle'

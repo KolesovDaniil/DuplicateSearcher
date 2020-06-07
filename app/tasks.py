@@ -26,7 +26,7 @@ SUBDIR = MAIN_DIR + 'pict/'
 CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
 
 
-@celery_app.task(serializer='pickle')
+# @celery_app.task
 def process(id, spreadsheet_id):
     with current_app.app_context():
         gauth = GoogleAuth()
