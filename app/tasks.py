@@ -10,6 +10,10 @@ import shutil
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+import httplib2
+import apiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
+
 from flask import current_app
 
 from app.database import db
@@ -19,10 +23,11 @@ from .celery import celery_app
 
 MAIN_DIR = '/home/DinaKursach/'
 SUBDIR = MAIN_DIR + 'pict/'
+CREDENTIALS_FILE = 'diploma-264613-8c34223b5cf0.json'
 
 
 @celery_app.task(serializer='pickle')
-def process(id, service, spreadsheet_id):
+def process(id, spreadsheet_id):
     with current_app.app_context():
         gauth = GoogleAuth()
         # Try to load saved client credentials
@@ -38,7 +43,7 @@ def process(id, service, spreadsheet_id):
             gauth.Authorize()
         # Save the current credentials to a file
         gauth.SaveCredentialsFile("mycreds.txt")
-        _list_folder(id, SUBDIR, gauth, service, spreadsheet_id)
+        _list_folder(id, SUBDIR, gauth, spreadsheet_id)
 
 
 def _partial(total_byte_len, part_size_limit):
@@ -50,7 +55,7 @@ def _partial(total_byte_len, part_size_limit):
     return video_parts
 
 
-def _list_folder(parent, folder, gauth, spreadsheet_service, spreadsheet_id):
+def _list_folder(parent, folder, gauth, spreadsheet_id):
     """Function to get all videos"""
     drive = GoogleDrive(gauth)
     service = gauth.service
@@ -59,8 +64,7 @@ def _list_folder(parent, folder, gauth, spreadsheet_service, spreadsheet_id):
     for f in file_list:
         if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
             filelist.append({"id": f['id'], "title": f['title'],
-                             "list": _list_folder(f['id'], folder, gauth, spreadsheet_service,
-                                                  spreadsheet_id)})
+                             "list": _list_folder(f['id'], folder, gauth, spreadsheet_id)})
         elif f['mimeType'] == 'video/mp4':
             file = drive.CreateFile({'id': f['id']})
             _gd_download_file(service, f['id'])
@@ -79,7 +83,7 @@ def _list_folder(parent, folder, gauth, spreadsheet_service, spreadsheet_id):
                     _search_similar(added_video.id,
                                     MAIN_DIR + added_video.name.split(".")[0] + '/')
                     _delete_dir(video.split(".")[0])
-                    _insert_results(spreadsheet_service, spreadsheet_id)
+                    _insert_results(spreadsheet_id)
 
     return filelist
 
@@ -230,7 +234,7 @@ def _transliterate(name):
     return name
 
 
-def _insert_results(service, spreadsheet_id):
+def _insert_results(spreadsheet_id):
     """Function to get link of GoogleSheets link"""
 
     engine = db.create_engine(AppConfig().SQLALCHEMY_DATABASE_URI, {})
@@ -260,6 +264,13 @@ def _insert_results(service, spreadsheet_id):
         FROM log 
         GROUP BY video1_id, video2_id 
         HAVING video_similarity=100;""")
+
+    credentials = ServiceAccountCredentials. \
+        from_json_keyfile_name(CREDENTIALS_FILE,
+                               ['https://www.googleapis.com/auth/spreadsheets',
+                                'https://www.googleapis.com/auth/drive'])
+    http_auth = credentials.authorize(httplib2.Http())
+    service = apiclient.discovery.build('sheets', 'v4', http=http_auth)
 
     results = [list(row) for row in query]
     result = [["video1_url", "video1_url", "similarity"]]

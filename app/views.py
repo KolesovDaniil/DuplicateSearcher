@@ -73,7 +73,7 @@ def create_result_table(mail):
             body={'type': 'anyone', 'role': 'writer'},
             fields='id'
         ).execute()
-    return service, spreadsheet['spreadsheetId']
+    return spreadsheet['spreadsheetId']
 
 
 def get_task_status(task_id: str) -> str:
