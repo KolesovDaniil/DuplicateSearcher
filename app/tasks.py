@@ -64,7 +64,7 @@ def _list_folder(parent, folder, gauth, spreadsheet_id):
         if f['mimeType'] == 'application/vnd.google-apps.folder':  # if folder
             filelist.append({"id": f['id'], "title": f['title'],
                              "list": _list_folder(f['id'], folder, gauth, spreadsheet_id)})
-        elif 'video/' in f['mimeType']#f['mimeType'] == 'video/mp4' || f['mimeType'] == 'video/avi':
+        elif 'video/' in f['mimeType']:
             file = drive.CreateFile({'id': f['id']})
             _gd_download_file(service, f['id'])
             added_video = _add_video(_transliterate(f["title"]) \
