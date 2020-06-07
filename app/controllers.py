@@ -24,9 +24,9 @@ class VideoDuplicateProc(Resource):
 
         email = FoldersNs.ns.payload['email']
 
-        gauth = views.check_access(folderId)
+        views.check_access(folderId)
         service, spreadsheet_id = views.create_result_table(email)
-        task = tasks.process.delay(folderId, gauth, service, spreadsheet_id)
+        task = tasks.process.delay(folderId, service, spreadsheet_id)
 
         return {'tableLink': 'https://docs.google.com/spreadsheets/d/' + spreadsheet_id,
                 'taskId': task.id}, HTTPStatus.ACCEPTED

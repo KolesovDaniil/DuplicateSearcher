@@ -1,6 +1,18 @@
 from celery import Celery
 
 celery_app = Celery('app',
-                    broker='redis://localhost:6379/0',
                     backend='redis://localhost:6379/0',
-                    include=['app.tasks'])
+                    broker='redis://localhost:6379/0')
+
+
+def init_celery(celery_app, app):
+    """"""
+
+    celery_app.conf.update(app.config)
+
+    class ContextTask(celery_app.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery_app.Task = ContextTask
