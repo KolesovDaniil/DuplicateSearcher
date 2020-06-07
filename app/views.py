@@ -62,11 +62,14 @@ def create_result_table(mail):
     drive_service = apiclient.discovery.build('drive', 'v3', http=http_auth)
 
     if mail:
-        drive_service.permissions().create(
-            fileId=spreadsheet['spreadsheetId'],
-            body={'type': 'user', 'role': 'writer', 'emailAddress': mail},
-            fields='id'
-        ).execute()
+        try:
+            drive_service.permissions().create(
+                fileId=spreadsheet['spreadsheetId'],
+                body={'type': 'user', 'role': 'writer', 'emailAddress': mail},
+                fields='id'
+            ).execute()
+        except:
+            raise BadRequestError()
     else:
         drive_service.permissions().create(
             fileId=spreadsheet['spreadsheetId'],
